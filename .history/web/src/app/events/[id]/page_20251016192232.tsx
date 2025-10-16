@@ -68,17 +68,6 @@ export default function EventPage({ params }: { params: { id: string } }) {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isFavoritesModalOpen, setIsFavoritesModalOpen] = useState(false);
 
-  // Helper functions for authentication checks
-  const checkAuthenticationForAction = (action: string) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      toast.error(`Please sign in to ${action}`);
-      router.push(`/auth/login?returnUrl=${encodeURIComponent(window.location.pathname)}`);
-      return false;
-    }
-    return true;
-  };
-
   const fetchEventData = useCallback(async () => {
     try {
       setLoading(true);
@@ -363,26 +352,12 @@ export default function EventPage({ params }: { params: { id: string } }) {
                   {event.isFree ? 'Register Now' : 'Buy Tickets'}
                 </Link>
                 
-                <button 
-                  onClick={() => {
-                    if (checkAuthenticationForAction('add to favorites')) {
-                      setIsFavoritesModalOpen(true);
-                    }
-                  }}
-                  className="w-full flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all"
-                >
+                <button className="w-full flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all">
                   <Heart size={16} />
                   Add to Favorites
                 </button>
                 
-                <button 
-                  onClick={() => {
-                    if (checkAuthenticationForAction('share this event')) {
-                      setIsShareModalOpen(true);
-                    }
-                  }}
-                  className="w-full flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all"
-                >
+                <button className="w-full flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all">
                   <Share2 size={16} />
                   Share Event
                 </button>
@@ -403,45 +378,13 @@ export default function EventPage({ params }: { params: { id: string } }) {
                 </div>
               </div>
               
-              <button 
-                onClick={() => {
-                  if (checkAuthenticationForAction('contact the organizer')) {
-                    setIsContactModalOpen(true);
-                  }
-                }}
-                className="w-full py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all"
-              >
+              <button className="w-full py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all">
                 Contact Organizer
               </button>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Modals */}
-      {event && (
-        <>
-          <ContactOrganizerModal
-            isOpen={isContactModalOpen}
-            onClose={() => setIsContactModalOpen(false)}
-            organizer={event.organizer}
-            eventName={event.name}
-            eventId={params.id}
-          />
-          
-          <ShareEventModal
-            isOpen={isShareModalOpen}
-            onClose={() => setIsShareModalOpen(false)}
-            event={event}
-          />
-          
-          <AddToFavoritesModal
-            isOpen={isFavoritesModalOpen}
-            onClose={() => setIsFavoritesModalOpen(false)}
-            event={event}
-          />
-        </>
-      )}
     </div>
   );
 }

@@ -395,11 +395,10 @@ export const eventFavoriteValidationSchema = Yup.object({
   
   reminderDate: Yup.date()
     .min(new Date(), 'Reminder date must be in the future')
-    .nullable()
-    .default(null),
+    .notRequired(),
   
   categories: Yup.array()
-    .of(Yup.string().required())
+    .of(Yup.string())
     .max(5, 'Maximum 5 categories allowed')
     .default([]),
 });

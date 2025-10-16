@@ -39,15 +39,11 @@ function EventHomepage() {
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searching, setSearching] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const eventsPerPage = 12;
   const [showScrollButton, setShowScrollButton] = useState(false);
   const categoryContainerRef = useRef<HTMLDivElement>(null);
-
-  // Debounce search query to avoid excessive API calls
-  const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   // Format price in IDR
   const formatIDR = (amount: number) => {

@@ -379,7 +379,7 @@ export const shareEventValidationSchema = Yup.object({
   
   personalMessage: Yup.string()
     .max(500, 'Personal message must be less than 500 characters')
-    .default(''),
+    .optional(),
   
   senderName: Yup.string()
     .min(2, 'Name must be at least 2 characters')
@@ -391,15 +391,14 @@ export const shareEventValidationSchema = Yup.object({
 export const eventFavoriteValidationSchema = Yup.object({
   notes: Yup.string()
     .max(300, 'Notes must be less than 300 characters')
-    .default(''),
+    .optional(),
   
   reminderDate: Yup.date()
     .min(new Date(), 'Reminder date must be in the future')
-    .nullable()
-    .default(null),
+    .optional(),
   
   categories: Yup.array()
-    .of(Yup.string().required())
+    .of(Yup.string())
     .max(5, 'Maximum 5 categories allowed')
-    .default([]),
+    .optional(),
 });

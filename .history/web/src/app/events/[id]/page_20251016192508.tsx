@@ -404,11 +404,7 @@ export default function EventPage({ params }: { params: { id: string } }) {
               </div>
               
               <button 
-                onClick={() => {
-                  if (checkAuthenticationForAction('contact the organizer')) {
-                    setIsContactModalOpen(true);
-                  }
-                }}
+                onClick={() => setIsContactModalOpen(true)}
                 className="w-full py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all"
               >
                 Contact Organizer
