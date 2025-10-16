@@ -1,0 +1,277 @@
+// EventHub Database Schema - ERD
+// Copy and paste this entire file into https://dbdiagram.io/
+
+// ========================================
+// ENUMS
+// ========================================
+
+Enum Role {
+  ADMIN
+  USER
+  ORGANIZER
+}
+
+Enum EventCategory {
+  MUSIC
+  TECHNOLOGY
+  BUSINESS
+  SPORTS
+  ARTS
+  FOOD
+  EDUCATION
+  HEALTH
+  OTHER
+}
+
+Enum TransactionStatus {
+  WAITING_FOR_PAYMENT
+  WAITING_FOR_ADMIN_CONFIRMATION
+  DONE
+  REJECTED
+  EXPIRED
+  CANCELED
+}
+
+Enum TicketType {
+  REGULAR
+  VIP
+  EARLY_BIRD
+  STUDENT
+}
+
+Enum CouponType {
+  VOUCHER
+  REWARD
+  REFERRAL
+}
+
+Enum NotificationType {
+  TRANSACTION_ACCEPTED
+  TRANSACTION_REJECTED
+  PAYMENT_REMINDER
+  EVENT_REMINDER
+  REFERRAL_REWARD
+}
+
+// ========================================
+// TABLES
+// ========================================
+
+Table users {
+  id int [pk, increment]
+  email varchar [unique, not null]
+  password varchar [not null]
+  first_name varchar [not null]
+  last_name varchar [not null]
+  phone_number varchar
+  role Role [default: 'USER']
+  point_balance int [default: 0]
+  avatar varchar
+  is_verified boolean [default: false]
+  referral_code varchar [unique, not null, note: "User's own referral code"]
+  referred_by varchar [note: "Referral code used during registration"]
+  reset_token varchar
+  reset_expiry datetime
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  
+  Note: 'Users can be regular attendees, event organizers, or admins'
+}
+
+Table events {
+  id int [pk, increment]
+  name varchar [not null]
+  description text [not null]
+  category EventCategory [not null]
+  location varchar [not null]
+  address varchar [not null]
+  start_date datetime [not null]
+  end_date datetime [not null]
+  price int [not null, note: 'Price in IDR (e.g., 300000 for Rp 300,000)']
+  available_seats int [not null]
+  total_seats int [not null]
+  is_free boolean [default: false]
+  image_url varchar
+  is_active boolean [default: true]
+  organizer_id int [not null, ref: > users.id]
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  
+  Note: 'Events created by organizers'
+}
+
+Table tickets {
+  id int [pk, increment]
+  event_id int [not null, ref: > events.id]
+  type TicketType [not null]
+  name varchar [not null]
+  description text
+  price int [not null, note: 'Price in IDR']
+  available_seats int [not null]
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  
+  Note: 'Multiple ticket types per event (VIP, Regular, Early Bird, etc.)'
+}
+
+Table promotions {
+  id int [pk, increment]
+  event_id int [not null, ref: > events.id]
+  code varchar [unique, not null]
+  name varchar [not null]
+  description text
+  discount int [not null, note: 'Discount percentage or fixed amount in IDR']
+  is_percentage boolean [default: true]
+  max_uses int [not null]
+  used_count int [default: 0]
+  start_date datetime [not null]
+  end_date datetime [not null]
+  is_active boolean [default: true]
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  
+  Note: 'Event-specific promotional discount codes'
+}
+
+Table coupons {
+  id int [pk, increment]
+  user_id int [not null, ref: > users.id]
+  event_id int [ref: > events.id, note: 'null for system-wide coupons']
+  code varchar [unique, not null]
+  type CouponType [not null]
+  name varchar [not null]
+  description text
+  discount int [not null, note: 'Discount percentage or fixed amount in IDR']
+  is_percentage boolean [default: true]
+  is_used boolean [default: false]
+  expiry_date datetime [not null]
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  
+  Note: 'User-specific coupons (vouchers, rewards, referral coupons)'
+}
+
+Table transactions {
+  id int [pk, increment]
+  user_id int [not null, ref: > users.id]
+  event_id int [not null, ref: > events.id]
+  promotion_id int [ref: > promotions.id]
+  coupon_id int [ref: > coupons.id]
+  total_amount int [not null, note: 'Total in IDR']
+  points_used int [default: 0]
+  final_amount int [not null, note: 'After points/promotions/coupons']
+  status TransactionStatus [default: 'WAITING_FOR_PAYMENT']
+  payment_proof varchar
+  payment_deadline datetime [not null]
+  notes text
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  
+  Note: 'Ticket purchase transactions'
+}
+
+Table transaction_tickets {
+  id int [pk, increment]
+  transaction_id int [not null, ref: > transactions.id]
+  ticket_id int [not null, ref: > tickets.id]
+  quantity int [not null]
+  price int [not null, note: 'Price per ticket in IDR']
+  
+  Note: 'Junction table linking transactions to specific tickets'
+}
+
+Table reviews {
+  id int [pk, increment]
+  user_id int [not null, ref: > users.id]
+  event_id int [not null, ref: > events.id]
+  rating int [not null, note: '1-5 stars']
+  comment text
+  created_at datetime [default: `now()`]
+  updated_at datetime [default: `now()`]
+  
+  indexes {
+    (user_id, event_id) [unique, note: 'One review per user per event']
+  }
+  
+  Note: 'User reviews for attended events'
+}
+
+Table point_history {
+  id int [pk, increment]
+  user_id int [not null, ref: > users.id]
+  points int [not null, note: 'Positive for earning, negative for spending']
+  description varchar [not null]
+  created_at datetime [default: `now()`]
+  
+  Note: 'Track point earnings and redemptions'
+}
+
+Table notifications {
+  id int [pk, increment]
+  user_id int [not null, ref: > users.id]
+  type NotificationType [not null]
+  title varchar [not null]
+  message text [not null]
+  is_read boolean [default: false]
+  metadata text [note: 'JSON string for additional data']
+  created_at datetime [default: `now()`]
+  
+  Note: 'User notifications for various events'
+}
+
+Table event_statistics {
+  id int [pk, increment]
+  event_id int [not null, ref: > events.id]
+  total_revenue int [default: 0, note: 'Total revenue in IDR']
+  total_sold int [default: 0, note: 'Total tickets sold']
+  total_views int [default: 0, note: 'Total event page views']
+  date datetime [default: `now()`]
+  created_at datetime [default: `now()`]
+  
+  Note: 'Daily statistics for events'
+}
+
+Table attendees {
+  id int [pk, increment]
+  transaction_id int [not null, ref: > transactions.id]
+  event_id int [not null, ref: > events.id]
+  user_id int [not null, ref: > users.id]
+  ticket_type varchar [not null]
+  quantity int [not null]
+  total_paid int [not null, note: 'Amount paid in IDR']
+  attended_at datetime [note: 'When they actually attended']
+  created_at datetime [default: `now()`]
+  
+  Note: 'Track event attendees'
+}
+
+// ========================================
+// RELATIONSHIPS SUMMARY
+// ========================================
+
+// User Relationships:
+// - users.id → events.organizer_id (1 user can organize many events)
+// - users.id → transactions.user_id (1 user can have many transactions)
+// - users.id → reviews.user_id (1 user can write many reviews)
+// - users.id → point_history.user_id (1 user can have many point records)
+// - users.id → coupons.user_id (1 user can have many coupons)
+// - users.id → notifications.user_id (1 user can have many notifications)
+// - users.id → attendees.user_id (1 user can be attendee in many events)
+
+// Event Relationships:
+// - events.id → tickets.event_id (1 event can have many ticket types)
+// - events.id → transactions.event_id (1 event can have many transactions)
+// - events.id → promotions.event_id (1 event can have many promotions)
+// - events.id → reviews.event_id (1 event can have many reviews)
+// - events.id → coupons.event_id (1 event can have many coupons - optional)
+// - events.id → event_statistics.event_id (1 event can have many statistics records)
+// - events.id → attendees.event_id (1 event can have many attendees)
+
+// Transaction Relationships:
+// - transactions.id → transaction_tickets.transaction_id (1 transaction can have many tickets)
+// - transactions.id → attendees.transaction_id (1 transaction creates many attendee records)
+// - transactions.promotion_id → promotions.id (optional)
+// - transactions.coupon_id → coupons.id (optional)
+
+// Ticket Relationships:
+// - tickets.id → transaction_tickets.ticket_id (1 ticket can be in many transactions)

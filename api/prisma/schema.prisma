@@ -1,0 +1,315 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+enum Role {
+  ADMIN
+  USER
+  ORGANIZER
+}
+
+enum EventCategory {
+  MUSIC
+  TECHNOLOGY
+  BUSINESS
+  SPORTS
+  ARTS
+  FOOD
+  EDUCATION
+  HEALTH
+  OTHER
+}
+
+enum TransactionStatus {
+  WAITING_FOR_PAYMENT
+  WAITING_FOR_ADMIN_CONFIRMATION
+  DONE
+  REJECTED
+  EXPIRED
+  CANCELED
+}
+
+enum TicketType {
+  REGULAR
+  VIP
+  EARLY_BIRD
+  STUDENT
+}
+
+enum CouponType {
+  VOUCHER     // Event-specific discount by organizer
+  REWARD      // System-wide reward coupon
+  REFERRAL    // Referral reward coupon
+}
+
+enum NotificationType {
+  TRANSACTION_ACCEPTED
+  TRANSACTION_REJECTED
+  PAYMENT_REMINDER
+  EVENT_REMINDER
+  REFERRAL_REWARD
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  password     String
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  phoneNumber  String?  @map("phone_number")
+  role         Role     @default(USER)
+  pointBalance Int      @default(0) @map("point_balance")
+  avatar       String?
+  isVerified   Boolean  @default(false) @map("is_verified")
+  
+  // Referral System
+  referralCode String   @unique @map("referral_code") // User's own referral code
+  referredBy   String?  @map("referred_by") // Referral code used during registration
+  
+  // Password Reset
+  resetToken   String?  @map("reset_token")
+  resetExpiry  DateTime? @map("reset_expiry")
+  
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organizedEvents Event[]         @relation("EventOrganizer")
+  transactions    Transaction[]
+  reviews         Review[]
+  pointHistory    PointHistory[]
+  coupons         Coupon[]
+  notifications   Notification[]
+  attendees       Attendee[]
+
+  @@map("users")
+}
+
+model Event {
+  id              Int           @id @default(autoincrement())
+  name            String
+  description     String
+  category        EventCategory
+  location        String
+  address         String
+  startDate       DateTime      @map("start_date")
+  endDate         DateTime      @map("end_date")
+  price           Int           // Price in IDR (stored as integer, e.g., 300000 for IDR 300,000)
+  availableSeats  Int           @map("available_seats")
+  totalSeats      Int           @map("total_seats")
+  isFree          Boolean       @default(false) @map("is_free")
+  imageUrl        String?       @map("image_url")
+  isActive        Boolean       @default(true) @map("is_active")
+  organizerId     Int           @map("organizer_id")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  organizer    User               @relation("EventOrganizer", fields: [organizerId], references: [id])
+  tickets      Ticket[]
+  transactions Transaction[]
+  promotions   Promotion[]
+  reviews      Review[]
+  coupons      Coupon[]
+  statistics   EventStatistics[]
+  attendees    Attendee[]
+
+  @@map("events")
+}
+
+model Ticket {
+  id             Int        @id @default(autoincrement())
+  eventId        Int        @map("event_id")
+  type           TicketType
+  name           String
+  description    String?
+  price          Int        // Price in IDR
+  availableSeats Int        @map("available_seats")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  event              Event               @relation(fields: [eventId], references: [id])
+  transactionTickets TransactionTicket[]
+
+  @@map("tickets")
+}
+
+model Promotion {
+  id          Int      @id @default(autoincrement())
+  eventId     Int      @map("event_id")
+  code        String   @unique
+  name        String
+  description String?
+  discount    Int      // Discount percentage or fixed amount in IDR
+  isPercentage Boolean @default(true) @map("is_percentage")
+  maxUses     Int      @map("max_uses")
+  usedCount   Int      @default(0) @map("used_count")
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  event        Event         @relation(fields: [eventId], references: [id])
+  transactions Transaction[]
+
+  @@map("promotions")
+}
+
+model Coupon {
+  id           Int        @id @default(autoincrement())
+  userId       Int        @map("user_id")
+  eventId      Int?       @map("event_id") // null for system-wide coupons
+  code         String     @unique
+  type         CouponType
+  name         String
+  description  String?
+  discount     Int        // Discount percentage or fixed amount in IDR
+  isPercentage Boolean    @default(true) @map("is_percentage")
+  isUsed       Boolean    @default(false) @map("is_used")
+  expiryDate   DateTime   @map("expiry_date")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  user         User       @relation(fields: [userId], references: [id])
+  event        Event?     @relation(fields: [eventId], references: [id])
+  transactions Transaction[]
+
+  @@map("coupons")
+}
+
+model Transaction {
+  id              Int               @id @default(autoincrement())
+  userId          Int               @map("user_id")
+  eventId         Int               @map("event_id")
+  promotionId     Int?              @map("promotion_id")
+  couponId        Int?              @map("coupon_id")
+  totalAmount     Int               @map("total_amount") // Total in IDR
+  pointsUsed      Int               @default(0) @map("points_used")
+  finalAmount     Int               @map("final_amount") // After points/promotions
+  status          TransactionStatus @default(WAITING_FOR_PAYMENT)
+  paymentProof    String?           @map("payment_proof")
+  paymentDeadline DateTime          @map("payment_deadline")
+  notes           String?
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  user      User                @relation(fields: [userId], references: [id])
+  event     Event               @relation(fields: [eventId], references: [id])
+  promotion Promotion?          @relation(fields: [promotionId], references: [id])
+  coupon    Coupon?             @relation(fields: [couponId], references: [id])
+  tickets   TransactionTicket[]
+  attendees Attendee[]
+
+  @@map("transactions")
+}
+
+model TransactionTicket {
+  id            Int @id @default(autoincrement())
+  transactionId Int @map("transaction_id")
+  ticketId      Int @map("ticket_id")
+  quantity      Int
+  price         Int // Price per ticket in IDR
+
+  // Relations
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  ticket      Ticket      @relation(fields: [ticketId], references: [id])
+
+  @@map("transaction_tickets")
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  eventId   Int      @map("event_id")
+  rating    Int      // 1-5 stars
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id])
+  event Event @relation(fields: [eventId], references: [id])
+
+  @@unique([userId, eventId]) // One review per user per event
+  @@map("reviews")
+}
+
+model PointHistory {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  points      Int      // Positive for earning, negative for spending
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("point_history")
+}
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  userId    Int              @map("user_id")
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false) @map("is_read")
+  metadata  String?          // JSON string for additional data
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+model EventStatistics {
+  id           Int      @id @default(autoincrement())
+  eventId      Int      @map("event_id")
+  totalRevenue Int      @default(0) @map("total_revenue") // Total revenue in IDR
+  totalSold    Int      @default(0) @map("total_sold")    // Total tickets sold
+  totalViews   Int      @default(0) @map("total_views")   // Total event page views
+  date         DateTime @default(now())
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  event Event @relation(fields: [eventId], references: [id])
+
+  @@map("event_statistics")
+}
+
+model Attendee {
+  id            Int      @id @default(autoincrement())
+  transactionId Int      @map("transaction_id")
+  eventId       Int      @map("event_id")
+  userId        Int      @map("user_id")
+  ticketType    String   @map("ticket_type")
+  quantity      Int
+  totalPaid     Int      @map("total_paid") // Amount paid in IDR
+  attendedAt    DateTime? @map("attended_at") // When they actually attended
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  event       Event       @relation(fields: [eventId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+
+  @@map("attendees")
+}
