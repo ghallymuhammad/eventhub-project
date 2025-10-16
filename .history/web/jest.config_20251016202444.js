@@ -5,6 +5,7 @@ const createJestConfig = nextJest({
 });
 
 const customJestConfig = {
+  preset: 'next/jest',
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   moduleNameMapping: {
