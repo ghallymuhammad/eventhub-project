@@ -119,6 +119,34 @@ export const api = {
     update: (id: string, data: any) => axiosInstance.put(`/samples/${id}`, data),
     delete: (id: string) => axiosInstance.delete(`/samples/${id}`),
   },
+
+  // Admin endpoints
+  admin: {
+    getStats: () => axiosInstance.get("/admin/stats"),
+    getUsers: (params?: any) => axiosInstance.get("/admin/users", { params }),
+    getEvents: (params?: any) => axiosInstance.get("/admin/events", { params }),
+    userAction: (userId: number, action: string) =>
+      axiosInstance.post(`/admin/users/${userId}/${action}`),
+    eventAction: (eventId: number, action: string) =>
+      axiosInstance.post(`/admin/events/${eventId}/${action}`),
+    getAnalytics: () => axiosInstance.get("/admin/analytics"),
+    updateSettings: (data: any) => axiosInstance.put("/admin/settings", data),
+    getTransactions: (params?: any) => axiosInstance.get("/admin/transactions", { params }),
+    getPlatformMetrics: () => axiosInstance.get("/admin/platform-metrics"),
+  },
+
+  // Organizer endpoints
+  organizer: {
+    getEvents: (params?: any) => axiosInstance.get("/organizer/events", { params }),
+    getAnalytics: () => axiosInstance.get("/organizer/analytics"),
+    getAttendees: (eventId: string) => axiosInstance.get(`/organizer/events/${eventId}/attendees`),
+    getRevenue: (params?: any) => axiosInstance.get("/organizer/revenue", { params }),
+    sendMessage: (data: any) => axiosInstance.post("/organizer/messages", data),
+    exportData: (type: string, params?: any) =>
+      axiosInstance.get(`/organizer/export/${type}`, { params }),
+    updateProfile: (data: any) => axiosInstance.put("/organizer/profile", data),
+    getProfile: () => axiosInstance.get("/organizer/profile"),
+  },
 };
 
 export default api;

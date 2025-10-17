@@ -403,3 +403,69 @@ export const eventFavoriteValidationSchema = Yup.object({
     .max(5, 'Maximum 5 categories allowed')
     .default([]),
 });
+
+// Create Event Validation Schema
+export const createEventValidationSchema = Yup.object({
+  name: Yup.string()
+    .min(3, 'Event name must be at least 3 characters')
+    .max(100, 'Event name must be less than 100 characters')
+    .required('Event name is required'),
+  
+  description: Yup.string()
+    .min(10, 'Description must be at least 10 characters')
+    .max(2000, 'Description must be less than 2000 characters')
+    .required('Description is required'),
+  
+  category: Yup.string()
+    .oneOf([
+      '', 'MUSIC', 'TECHNOLOGY', 'ARTS', 'SPORTS', 'FOOD', 'BUSINESS', 
+      'EDUCATION', 'HEALTH', 'FASHION', 'TRAVEL', 'PHOTOGRAPHY', 
+      'GAMING', 'FITNESS', 'OTHER'
+    ], 'Invalid category')
+    .test('not-empty', 'Category is required', value => value !== ''),
+  
+  location: Yup.string()
+    .min(3, 'Location must be at least 3 characters')
+    .max(100, 'Location must be less than 100 characters')
+    .required('Location is required'),
+  
+  address: Yup.string()
+    .max(200, 'Address must be less than 200 characters')
+    .optional(),
+  
+  startDate: Yup.string()
+    .required('Start date is required')
+    .test('is-future-date', 'Start date must be in the future', function(value) {
+      if (!value) return false;
+      return new Date(value) > new Date();
+    }),
+  
+  endDate: Yup.string()
+    .required('End date is required')
+    .test('is-after-start', 'End date must be after start date', function(value) {
+      const { startDate } = this.parent;
+      if (!value || !startDate) return false;
+      return new Date(value) > new Date(startDate);
+    }),
+  
+  price: Yup.number()
+    .min(0, 'Price cannot be negative')
+    .max(100000000, 'Price is too high')
+    .when('isFree', {
+      is: true,
+      then: (schema) => schema.equals([0], 'Price must be 0 for free events'),
+      otherwise: (schema) => schema.min(0, 'Price cannot be negative')
+    }),
+  
+  totalSeats: Yup.number()
+    .min(1, 'Must have at least 1 seat')
+    .max(100000, 'Maximum 100,000 seats allowed')
+    .required('Total seats is required'),
+  
+  isFree: Yup.boolean()
+    .default(false),
+  
+  imageUrl: Yup.string()
+    .url('Invalid image URL')
+    .optional(),
+});

@@ -187,8 +187,48 @@ export default function Navbar() {
                     >
                       💳 Transaction History
                     </Link>
+                    {/* Role-based Dashboard Links */}
+                    {user.role === 'ADMIN' && (
+                      <>
+                        <Link
+                          href="/admin"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          🛡️ Admin Dashboard
+                        </Link>
+                        <Link
+                          href="/admin/users"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          � Manage Users
+                        </Link>
+                        <Link
+                          href="/admin/events"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          📅 Manage Events
+                        </Link>
+                      </>
+                    )}
                     {user.role === 'ORGANIZER' && (
                       <>
+                        <Link
+                          href="/organizer"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          📊 Organizer Dashboard
+                        </Link>
+                        <Link
+                          href="/events/create"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          ➕ Create Event
+                        </Link>
                         <Link
                           href="/my-events"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -196,14 +236,16 @@ export default function Navbar() {
                         >
                           📅 My Events
                         </Link>
-                        <Link
-                          href="/dashboard"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                          onClick={() => setIsUserMenuOpen(false)}
-                        >
-                          📊 Dashboard
-                        </Link>
                       </>
+                    )}
+                    {user.role === 'USER' && (
+                      <Link
+                        href="/dashboard"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        📊 My Dashboard
+                      </Link>
                     )}
                     <Link
                       href="/referrals"
