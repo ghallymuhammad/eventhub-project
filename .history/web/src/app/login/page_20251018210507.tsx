@@ -52,10 +52,6 @@ export default function LoginPage() {
       if (typeof window !== 'undefined') {
         localStorage.setItem('token', token);
         localStorage.setItem('user_data', JSON.stringify(user));
-        
-        // Also set token in cookie for server-side compatibility
-        document.cookie = `token=${token}; path=/; max-age=86400; SameSite=strict`;
-        
         console.log('Login successful, token stored:', token);
         console.log('User data stored:', user);
       }

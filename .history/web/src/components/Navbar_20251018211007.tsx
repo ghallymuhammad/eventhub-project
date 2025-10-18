@@ -53,12 +53,8 @@ export default function Navbar() {
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('user_data');
-      localStorage.removeItem('token');
+      localStorage.removeItem('auth_token');
       localStorage.removeItem('refresh_token');
-      
-      // Clear token cookie
-      document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-      
       setUser(null);
       setIsUserMenuOpen(false);
       router.push('/');

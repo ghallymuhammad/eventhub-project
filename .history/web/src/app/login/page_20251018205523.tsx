@@ -36,32 +36,19 @@ export default function LoginPage() {
         password: values.password,
       });
 
-      console.log('Full login response:', response);
-      console.log('Response data:', response.data);
-      
-      // Check if we have the expected data structure
-      if (!response?.data?.data?.user) {
-        throw new Error('Invalid login response structure');
-      }
-      
-      const { token, user } = response.data.data;
-      
+      console.log('Login response:', response.data);
       toast.success('Welcome back! 🎉');
       
       // Store authentication data
       if (typeof window !== 'undefined') {
-        localStorage.setItem('token', token);
-        localStorage.setItem('user_data', JSON.stringify(user));
-        
-        // Also set token in cookie for server-side compatibility
-        document.cookie = `token=${token}; path=/; max-age=86400; SameSite=strict`;
-        
-        console.log('Login successful, token stored:', token);
-        console.log('User data stored:', user);
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user_data', JSON.stringify(response.data.user));
+        console.log('Login successful, token stored:', response.data.token);
+        console.log('User data stored:', response.data.user);
       }
       
       // Redirect based on user role
-      const userRole = user.role;
+      const userRole = response.data.user.role;
       console.log('Redirecting based on role:', userRole);
       
       if (userRole === 'ORGANIZER') {

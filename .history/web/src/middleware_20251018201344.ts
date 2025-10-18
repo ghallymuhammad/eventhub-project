@@ -5,17 +5,13 @@ import { jwtVerify } from 'jose';
 const protectedRoutes = [
   '/dashboard',
   '/profile',
+  '/organizer',
   '/events/create',
   '/events/edit',
   '/checkout',
   '/favorites',
   '/tickets',
   '/admin',
-];
-
-// Client-side protected routes (handled by components, not middleware)
-const clientProtectedRoutes = [
-  '/organizer',
 ];
 
 // Public routes that don't require authentication
@@ -33,17 +29,7 @@ const publicRoutes = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Check if the route is client-side protected (let component handle auth)
-  const isClientProtectedRoute = clientProtectedRoutes.some(route => 
-    pathname.startsWith(route)
-  );
-  
-  if (isClientProtectedRoute) {
-    // Let the component handle authentication for these routes
-    return NextResponse.next();
-  }
-  
-  // Check if the route is server-side protected
+  // Check if the route is protected
   const isProtectedRoute = protectedRoutes.some(route => 
     pathname.startsWith(route)
   );
@@ -53,12 +39,11 @@ export async function middleware(request: NextRequest) {
     pathname === route || (route === '/events' && pathname.startsWith('/events/') && !pathname.includes('/edit') && !pathname.includes('/create'))
   );
 
-  // For server-side protected routes, we'll check cookies/headers
-  if (isProtectedRoute) {
-    // Get token from cookies or headers (server-side auth)
-    const token = request.cookies.get('token')?.value || 
-                  request.headers.get('authorization')?.replace('Bearer ', '');
+  // Get token from cookies or headers
+  const token = request.cookies.get('token')?.value || 
+                request.headers.get('authorization')?.replace('Bearer ', '');
 
+  if (isProtectedRoute) {
     if (!token) {
       // Redirect to login with return URL
       const loginUrl = new URL('/login', request.url);
@@ -70,18 +55,22 @@ export async function middleware(request: NextRequest) {
       // Verify JWT token
       const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-key');
       await jwtVerify(token, secret);
+      
+      // Token is valid, continue
+      return NextResponse.next();
     } catch (error) {
-      // Token is invalid, clear cookie and redirect
+      // Token is invalid, redirect to login
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('returnUrl', pathname);
       
       const response = NextResponse.redirect(loginUrl);
+      // Clear invalid token
       response.cookies.delete('token');
       return response;
     }
   }
 
-  // For public routes or when continuing to protected routes, continue
+  // For public routes or when user is authenticated, continue
   return NextResponse.next();
 }
 

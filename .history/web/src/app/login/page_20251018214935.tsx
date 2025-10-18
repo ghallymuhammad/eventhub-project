@@ -64,13 +64,14 @@ export default function LoginPage() {
       const userRole = user.role;
       console.log('Redirecting based on role:', userRole);
       
+      // Use window.location for immediate redirect to bypass middleware
       if (userRole === 'ORGANIZER') {
-        router.push('/organizer/dashboard');
+        window.location.href = '/organizer/dashboard';
       } else if (userRole === 'ADMIN') {
-        router.push('/admin/dashboard');
+        window.location.href = '/admin/dashboard';
       } else {
         // Regular user goes to homepage
-        router.push('/');
+        window.location.href = '/';
       }
     } catch (error: any) {
       console.error('Login error:', error);

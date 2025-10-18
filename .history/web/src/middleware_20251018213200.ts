@@ -5,17 +5,13 @@ import { jwtVerify } from 'jose';
 const protectedRoutes = [
   '/dashboard',
   '/profile',
+  '/organizer',
   '/events/create',
   '/events/edit',
   '/checkout',
   '/favorites',
   '/tickets',
   '/admin',
-];
-
-// Client-side protected routes (handled by components, not middleware)
-const clientProtectedRoutes = [
-  '/organizer',
 ];
 
 // Public routes that don't require authentication
@@ -33,17 +29,7 @@ const publicRoutes = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Check if the route is client-side protected (let component handle auth)
-  const isClientProtectedRoute = clientProtectedRoutes.some(route => 
-    pathname.startsWith(route)
-  );
-  
-  if (isClientProtectedRoute) {
-    // Let the component handle authentication for these routes
-    return NextResponse.next();
-  }
-  
-  // Check if the route is server-side protected
+  // Check if the route is protected
   const isProtectedRoute = protectedRoutes.some(route => 
     pathname.startsWith(route)
   );
@@ -53,32 +39,31 @@ export async function middleware(request: NextRequest) {
     pathname === route || (route === '/events' && pathname.startsWith('/events/') && !pathname.includes('/edit') && !pathname.includes('/create'))
   );
 
-  // For server-side protected routes, we'll check cookies/headers
+  // For client-side protected routes, we'll let the component handle auth
+  // since middleware can't access localStorage directly
   if (isProtectedRoute) {
     // Get token from cookies or headers (server-side auth)
     const token = request.cookies.get('token')?.value || 
                   request.headers.get('authorization')?.replace('Bearer ', '');
 
-    if (!token) {
-      // Redirect to login with return URL
-      const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('returnUrl', pathname);
-      return NextResponse.redirect(loginUrl);
+    // Only enforce server-side token check for API routes and server actions
+    // Client-side routes will handle auth in the component
+    if (token) {
+      try {
+        // Verify JWT token
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-key');
+        await jwtVerify(token, secret);
+      } catch (error) {
+        // Token is invalid, clear cookie and redirect
+        const loginUrl = new URL('/login', request.url);
+        loginUrl.searchParams.set('returnUrl', pathname);
+        
+        const response = NextResponse.redirect(loginUrl);
+        response.cookies.delete('token');
+        return response;
+      }
     }
-
-    try {
-      // Verify JWT token
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-key');
-      await jwtVerify(token, secret);
-    } catch (error) {
-      // Token is invalid, clear cookie and redirect
-      const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('returnUrl', pathname);
-      
-      const response = NextResponse.redirect(loginUrl);
-      response.cookies.delete('token');
-      return response;
-    }
+    // If no server-side token, let the client component handle the redirect
   }
 
   // For public routes or when continuing to protected routes, continue

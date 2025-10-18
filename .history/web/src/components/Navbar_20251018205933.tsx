@@ -53,12 +53,8 @@ export default function Navbar() {
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('user_data');
-      localStorage.removeItem('token');
+      localStorage.removeItem('auth_token');
       localStorage.removeItem('refresh_token');
-      
-      // Clear token cookie
-      document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-      
       setUser(null);
       setIsUserMenuOpen(false);
       router.push('/');
@@ -101,7 +97,7 @@ export default function Navbar() {
             </Link>
             {user?.role === 'ORGANIZER' && (
               <Link
-                href="/organizer/create-event"
+                href="/create-event"
                 className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
               >
                 ✨ Create Event
@@ -179,20 +175,24 @@ export default function Navbar() {
                     >
                       👤 My Profile
                     </Link>
-                    <Link
-                      href="/my-tickets"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setIsUserMenuOpen(false)}
-                    >
-                      🎫 My Tickets
-                    </Link>
-                    <Link
-                      href="/transactions"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setIsUserMenuOpen(false)}
-                    >
-                      💳 Transaction History
-                    </Link>
+                    {user.role !== 'ORGANIZER' && (
+                      <>
+                        <Link
+                          href="/my-tickets"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          🎫 My Tickets
+                        </Link>
+                        <Link
+                          href="/transactions"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          💳 Transaction History
+                        </Link>
+                      </>
+                    )}
                     {/* Role-based Dashboard Links */}
                     {user.role === 'ADMIN' && (
                       <>
@@ -222,25 +222,18 @@ export default function Navbar() {
                     {user.role === 'ORGANIZER' && (
                       <>
                         <Link
-                          href="/organizer"
+                          href="/organizer/dashboard"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                           onClick={() => setIsUserMenuOpen(false)}
                         >
                           📊 Organizer Dashboard
                         </Link>
                         <Link
-                          href="/events/create"
+                          href="/organizer/create-event"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                           onClick={() => setIsUserMenuOpen(false)}
                         >
                           ➕ Create Event
-                        </Link>
-                        <Link
-                          href="/my-events"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                          onClick={() => setIsUserMenuOpen(false)}
-                        >
-                          📅 My Events
                         </Link>
                       </>
                     )}

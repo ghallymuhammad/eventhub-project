@@ -452,7 +452,7 @@ class EventController {
         where: {
           event: userRole === 'ORGANIZER' ? { organizerId: userId } : {}
         },
-        _sum: { finalAmount: true }
+        _sum: { amount: true }
       });
 
       const totalPages = Math.ceil(totalCount / take);
@@ -462,10 +462,10 @@ class EventController {
         data: {
           events,
           stats: {
-            totalEvents: stats._count._all || 0,
-            totalCapacity: stats._sum.totalSeats || 0,
-            totalTicketsSold: totalTransactions,
-            totalRevenue: totalRevenue._sum.finalAmount || 0
+            totalEvents: stats._count.id || 0,
+            totalCapacity: stats._sum.capacity || 0,
+            totalTicketsSold,
+            totalRevenue: totalRevenue._sum.totalAmount || 0
           },
           pagination: {
             currentPage: Number(page),

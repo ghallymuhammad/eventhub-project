@@ -3,8 +3,12 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-
-interface User {
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                    {user?.firstName?.charAt(0) || 'U'}{user?.lastName?.charAt(0) || 'U'}
+                  </div>
+                  <span className="text-sm font-medium text-gray-700">
+                    {user?.firstName || 'User'}
+                  </span>face User {
   firstName: string;
   lastName: string;
   email: string;
@@ -26,9 +30,21 @@ export default function Navbar() {
       const userData = localStorage.getItem('user_data');
       if (userData) {
         try {
-          setUser(JSON.parse(userData));
+          const parsedUser = JSON.parse(userData);
+          // Validate user data structure
+          if (parsedUser && parsedUser.email && parsedUser.role) {
+            setUser(parsedUser);
+          } else {
+            console.warn('Invalid user data structure:', parsedUser);
+            // Clear invalid data
+            localStorage.removeItem('user_data');
+            localStorage.removeItem('token');
+          }
         } catch (error) {
           console.error('Error parsing user data:', error);
+          // Clear corrupted data
+          localStorage.removeItem('user_data');
+          localStorage.removeItem('token');
         }
       }
     }
@@ -54,11 +70,8 @@ export default function Navbar() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('user_data');
       localStorage.removeItem('token');
+      localStorage.removeItem('auth_token');
       localStorage.removeItem('refresh_token');
-      
-      // Clear token cookie
-      document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-      
       setUser(null);
       setIsUserMenuOpen(false);
       router.push('/');
@@ -138,10 +151,10 @@ export default function Navbar() {
                   className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 rounded-full pl-2 pr-4 py-2 transition-colors"
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                    {user.firstName.charAt(0)}{user.lastName.charAt(0)}
+                    {user?.firstName?.charAt(0) || 'U'}{user?.lastName?.charAt(0) || 'U'}
                   </div>
                   <span className="font-medium text-gray-700">
-                    {user.firstName}
+                    {user?.firstName || 'User'}
                   </span>
                   <svg
                     className={`w-4 h-4 text-gray-500 transition-transform ${
@@ -165,11 +178,11 @@ export default function Navbar() {
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2">
                     <div className="px-4 py-3 border-b border-gray-100">
                       <p className="text-sm font-semibold text-gray-900">
-                        {user.firstName} {user.lastName}
+                        {user?.firstName || 'User'} {user?.lastName || ''}
                       </p>
-                      <p className="text-xs text-gray-500">{user.email}</p>
+                      <p className="text-xs text-gray-500">{user?.email || ''}</p>
                       <span className="inline-block mt-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                        {user.role}
+                        {user?.role || 'User'}
                       </span>
                     </div>
                     <Link
@@ -179,20 +192,24 @@ export default function Navbar() {
                     >
                       👤 My Profile
                     </Link>
-                    <Link
-                      href="/my-tickets"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setIsUserMenuOpen(false)}
-                    >
-                      🎫 My Tickets
-                    </Link>
-                    <Link
-                      href="/transactions"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setIsUserMenuOpen(false)}
-                    >
-                      💳 Transaction History
-                    </Link>
+                    {user.role !== 'ORGANIZER' && (
+                      <>
+                        <Link
+                          href="/my-tickets"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          🎫 My Tickets
+                        </Link>
+                        <Link
+                          href="/transactions"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          💳 Transaction History
+                        </Link>
+                      </>
+                    )}
                     {/* Role-based Dashboard Links */}
                     {user.role === 'ADMIN' && (
                       <>
@@ -222,44 +239,39 @@ export default function Navbar() {
                     {user.role === 'ORGANIZER' && (
                       <>
                         <Link
-                          href="/organizer"
+                          href="/organizer/dashboard"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                           onClick={() => setIsUserMenuOpen(false)}
                         >
                           📊 Organizer Dashboard
                         </Link>
                         <Link
-                          href="/events/create"
+                          href="/organizer/create-event"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                           onClick={() => setIsUserMenuOpen(false)}
                         >
                           ➕ Create Event
                         </Link>
-                        <Link
-                          href="/my-events"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                          onClick={() => setIsUserMenuOpen(false)}
-                        >
-                          📅 My Events
-                        </Link>
                       </>
                     )}
                     {user.role === 'USER' && (
-                      <Link
-                        href="/dashboard"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        📊 My Dashboard
-                      </Link>
+                      <>
+                        <Link
+                          href="/dashboard"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          📊 My Dashboard
+                        </Link>
+                        <Link
+                          href="/referrals"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          🎁 Referral Rewards
+                        </Link>
+                      </>
                     )}
-                    <Link
-                      href="/referrals"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setIsUserMenuOpen(false)}
-                    >
-                      🎁 Referral Rewards
-                    </Link>
                     <div className="border-t border-gray-100 mt-2 pt-2">
                       <button
                         onClick={handleLogout}
@@ -339,7 +351,7 @@ export default function Navbar() {
               </Link>
               {user?.role === 'ORGANIZER' && (
                 <Link
-                  href="/create-event"
+                  href="/organizer/create-event"
                   className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -348,45 +360,40 @@ export default function Navbar() {
               )}
               {user && (
                 <>
-                  <Link
-                    href="/my-tickets"
-                    className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    🎫 My Tickets
-                  </Link>
-                  <Link
-                    href="/transactions"
-                    className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    💳 Transactions
-                  </Link>
-                  {user.role === 'ORGANIZER' && (
+                  {user.role !== 'ORGANIZER' && (
                     <>
                       <Link
-                        href="/my-events"
+                        href="/my-tickets"
                         className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        📅 My Events
+                        🎫 My Tickets
                       </Link>
                       <Link
-                        href="/dashboard"
+                        href="/transactions"
                         className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        📊 Dashboard
+                        � Transactions
+                      </Link>
+                      <Link
+                        href="/referrals"
+                        className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        🎁 Referral Rewards
                       </Link>
                     </>
                   )}
-                  <Link
-                    href="/referrals"
-                    className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    🎁 Referral Rewards
-                  </Link>
+                  {user.role === 'ORGANIZER' && (
+                    <Link
+                      href="/organizer/dashboard"
+                      className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      📊 Dashboard
+                    </Link>
+                  )}
                   <Link
                     href="/profile"
                     className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg"

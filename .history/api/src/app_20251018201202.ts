@@ -43,7 +43,6 @@ export default class App {
 		// Define routes here
 		apiRouter.use("/samples", sampleRoute.useRouter());
 		apiRouter.use("/auth", authRoute);
-		apiRouter.use("/events", eventRoute);
 		apiRouter.use("/transactions", transactionRoute);
 		apiRouter.use("/test", testRoute);
 	}

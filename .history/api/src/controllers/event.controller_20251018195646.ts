@@ -22,7 +22,7 @@ class EventController {
 
       // Build where clause
       const where: any = {
-        isActive: true // Only show active events to public
+        status: 'PUBLISHED' // Only show published events to public
       };
 
       if (category && category !== 'all') {
@@ -206,15 +206,13 @@ class EventController {
           description,
           category,
           location,
-          address: location, // Using location as address for now
           startDate: start,
           endDate: end,
           price: Number(price),
-          totalSeats: Number(capacity),
-          availableSeats: Number(capacity),
+          capacity: Number(capacity),
           imageUrl: imageUrl || null,
-          organizerId: userId!,
-          isActive: true // Auto-publish for now
+          organizerId: userId,
+          status: 'PUBLISHED' // Auto-publish for now
         },
         include: {
           organizer: {
@@ -438,21 +436,21 @@ class EventController {
       // Calculate statistics
       const stats = await prisma.event.aggregate({
         where: userRole === 'ORGANIZER' ? { organizerId: userId } : {},
-        _count: { _all: true },
-        _sum: { totalSeats: true }
+        _count: { id: true },
+        _sum: { capacity: true }
       });
 
-      const totalTransactions = await prisma.transaction.count({
+      const totalTicketsSold = await prisma.ticket.count({
         where: {
           event: userRole === 'ORGANIZER' ? { organizerId: userId } : {}
         }
       });
 
-      const totalRevenue = await prisma.transaction.aggregate({
+      const totalRevenue = await prisma.ticket.aggregate({
         where: {
           event: userRole === 'ORGANIZER' ? { organizerId: userId } : {}
         },
-        _sum: { finalAmount: true }
+        _sum: { totalAmount: true }
       });
 
       const totalPages = Math.ceil(totalCount / take);
@@ -462,10 +460,10 @@ class EventController {
         data: {
           events,
           stats: {
-            totalEvents: stats._count._all || 0,
-            totalCapacity: stats._sum.totalSeats || 0,
-            totalTicketsSold: totalTransactions,
-            totalRevenue: totalRevenue._sum.finalAmount || 0
+            totalEvents: stats._count.id || 0,
+            totalCapacity: stats._sum.capacity || 0,
+            totalTicketsSold,
+            totalRevenue: totalRevenue._sum.totalAmount || 0
           },
           pagination: {
             currentPage: Number(page),
