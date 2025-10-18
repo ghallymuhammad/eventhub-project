@@ -1,0 +1,63 @@
+import { BASE_API_URL } from "../../../app.config";
+import axios from "axios";
+
+const axiosInstance = axios.create({
+	baseURL: BASE_API_URL,
+	headers: { "Content-Type": "application/json" },
+	withCredentials: false, // Disable credentials for now to avoid CORS issues
+});
+
+// Add request interceptor for debugging
+axiosInstance.interceptors.request.use(
+	(config) => {
+		console.log('🚀 Making API request:', {
+			method: config.method?.toUpperCase(),
+			url: config.url,
+			baseURL: config.baseURL,
+			fullURL: `${config.baseURL}${config.url}`,
+			data: config.data,
+			headers: config.headers,
+		});
+		return config;
+	},
+	(error) => {
+		console.error('❌ Request interceptor error:', error);
+		return Promise.reject(error);
+	}
+);
+
+// Add response interceptor for debugging
+axiosInstance.interceptors.response.use(
+	(response) => {
+		console.log('✅ API response received:', {
+			status: response.status,
+			statusText: response.statusText,
+			data: response.data,
+			url: response.config.url,
+		});
+		return response;
+	},
+	(error) => {
+		console.error('❌ API response error:', {
+			message: error.message,
+			status: error.response?.status,
+			statusText: error.response?.statusText,
+			data: error.response?.data,
+			url: error.config?.url,
+			fullURL: `${error.config?.baseURL}${error.config?.url}`,
+		});
+		return Promise.reject(error);
+	}
+);
+
+const axiosAuthInstance = (token: string) =>
+	axios.create({
+		baseURL: BASE_API_URL,
+		headers: {
+			"Content-Type": "application/json",
+			Authorization: `Bearer ${token}`,
+		},
+		withCredentials: false,
+	});
+
+export { axiosInstance, axiosAuthInstance };
