@@ -82,13 +82,33 @@ export default function EventPage({ params }: { params: { id: string } }) {
   const fetchEventData = useCallback(async () => {
     try {
       setLoading(true);
-      const [eventRes, ticketsRes] = await Promise.all([
-        api.events.getById(params.id),
-        api.tickets.getByEventId(params.id)
-      ]);
-
-      setEvent(eventRes.data);
-      setTickets(ticketsRes.data || []);
+      const eventRes = await api.events.getById(params.id);
+      
+      console.log('Event response:', eventRes.data);
+      
+      // Handle the API response structure
+      if (eventRes.data.success) {
+        const eventData = eventRes.data.data;
+        setEvent(eventData);
+        
+        // Use tickets from event data or create a default ticket
+        if (eventData.tickets && eventData.tickets.length > 0) {
+          setTickets(eventData.tickets);
+        } else {
+          // Create a simple ticket from event data
+          const simpleTicket: Ticket = {
+            id: 1,
+            type: 'GENERAL',
+            name: eventData.isFree ? 'Free Entry' : 'General Admission',
+            description: `Admission to ${eventData.name}`,
+            price: eventData.price || 0,
+            availableSeats: eventData.availableSeats
+          };
+          setTickets([simpleTicket]);
+        }
+      } else {
+        throw new Error('Invalid API response');
+      }
     } catch (error: any) {
       console.error('Failed to fetch event data:', error);
       toast.error('Failed to load event details');

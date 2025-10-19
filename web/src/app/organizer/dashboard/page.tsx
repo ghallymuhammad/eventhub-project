@@ -83,7 +83,7 @@ export default function OrganizerDashboard() {
         const token = localStorage.getItem('token');
         if (token) {
           const response = await api.events.getOrganizerEvents();
-          const { events: apiEvents, stats: apiStats } = response.data;
+          const { events: apiEvents, stats: apiStats } = response.data.data;
           
           // Transform API events to match component interface
           const transformedEvents = apiEvents.map((event: any) => ({
@@ -97,7 +97,7 @@ export default function OrganizerDashboard() {
             capacity: event.totalSeats,
             category: event.category,
             status: event.isActive ? 'PUBLISHED' : 'DRAFT',
-            ticketsSold: event._count?.transactions || 0,
+            ticketsSold: event._count?.tickets || 0,
             imageUrl: event.imageUrl
           }));
 

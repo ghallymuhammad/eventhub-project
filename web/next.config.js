@@ -25,6 +25,60 @@ const nextConfig = {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
 
+  // Image configuration for external hosts
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'source.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'plus.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.shutterstock.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.pixabay.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
+
   // API configuration for development
   async rewrites() {
     return [

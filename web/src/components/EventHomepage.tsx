@@ -91,7 +91,7 @@ function EventHomepage() {
       
       if (response.data?.success) {
         // Transform API data to match component interface
-        const transformedEvents = response.data.events.map((event: any) => ({
+        const transformedEvents = response.data.data.events.map((event: any) => ({
           id: event.id.toString(),
           title: event.name,
           category: event.category,
@@ -114,7 +114,7 @@ function EventHomepage() {
         } else {
           setAllEvents(prev => [...prev, ...transformedEvents]);
         }
-        setTotalPages(Math.ceil((response.data.total || 0) / eventsPerPage));
+        setTotalPages(response.data.data.pagination.totalPages);
         return;
       }
       
