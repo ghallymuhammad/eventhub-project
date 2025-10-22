@@ -3,8 +3,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { api } from '@/libs/api';
+import apiService from '@/services/api.service';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   ShoppingCart,
   Ticket as TicketIcon,
@@ -73,13 +74,12 @@ interface UserInfo {
 
 export default function CheckoutPage({ params }: { params: { eventId: string } }) {
   const router = useRouter();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [event, setEvent] = useState<Event | null>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authChecked, setAuthChecked] = useState(false);
 
   // Yup validation hook
   const {
@@ -97,59 +97,51 @@ export default function CheckoutPage({ params }: { params: { eventId: string } }
     phoneNumber: ''
   });
 
-  // Check if user is authenticated
-  const checkAuthentication = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('auth_token');
-      const userData = localStorage.getItem('user_data');
-      
-      if (token && userData) {
-        setIsAuthenticated(true);
-        try {
-          const user = JSON.parse(userData);
-          setValues({
-            firstName: user.firstName || '',
-            lastName: user.lastName || '',
-            email: user.email || '',
-            phoneNumber: user.phoneNumber || ''
-          });
-        } catch (error) {
-          console.error('Error parsing user data:', error);
-        }
-      } else {
-        setIsAuthenticated(false);
+  // Authentication check using AuthContext
+  useEffect(() => {
+    if (!authLoading) {
+      if (!isAuthenticated) {
         toast.error('Please sign in to purchase tickets');
         router.push(`/login?returnTo=${encodeURIComponent(`/checkout/${params.eventId}`)}`);
+        return;
+      }
+
+      // Pre-fill user data if available
+      if (user) {
+        setValues({
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          email: user.email || '',
+          phoneNumber: '' // Phone number not available in user object
+        });
       }
     }
-    setAuthChecked(true);
-  }, [params.eventId, router, setValues]);
+  }, [isAuthenticated, authLoading, user, router, params.eventId, setValues]);
 
   const fetchEventData = useCallback(async () => {
     try {
       setLoading(true);
-      const [eventRes, ticketsRes] = await Promise.all([
-        api.events.getById(params.eventId),
-        api.tickets.getByEventId(params.eventId)
-      ]);
-
-      setEvent(eventRes.data);
       
-      // Handle tickets response - it might be wrapped differently in mock vs real API
-      let ticketsData = [];
-      if (ticketsRes.data) {
-        if (Array.isArray(ticketsRes.data)) {
-          ticketsData = ticketsRes.data;
-        } else if (ticketsRes.data.success && Array.isArray(ticketsRes.data.tickets)) {
-          ticketsData = ticketsRes.data.tickets;
-        } else if (Array.isArray(ticketsRes.data.data)) {
-          ticketsData = ticketsRes.data.data;
-        } else {
-          ticketsData = ticketsRes.data;
-        }
+      // Fetch event data
+      const eventRes = await apiService.getEvent(params.eventId);
+      
+      if (eventRes.data?.success && eventRes.data?.data) {
+        setEvent(eventRes.data.data);
+        
+        // For now, create mock tickets since the API doesn't have tickets endpoint yet
+        // In a real app, you'd call: await apiService.get(`/events/${params.eventId}/tickets`)
+        const mockTickets = [
+          {
+            id: 1,
+            type: 'general',
+            name: 'General Admission',
+            description: 'Standard entry ticket',
+            price: eventRes.data.data.price || 0,
+            availableSeats: eventRes.data.data.availableSeats || 0
+          }
+        ];
+        setTickets(mockTickets);
       }
-      
-      setTickets(Array.isArray(ticketsData) ? ticketsData : []);
     } catch (error: any) {
       console.error('Failed to fetch event data:', error);
       toast.error('Failed to load event details');
@@ -160,14 +152,10 @@ export default function CheckoutPage({ params }: { params: { eventId: string } }
   }, [params.eventId, router]);
 
   useEffect(() => {
-    checkAuthentication();
-  }, [checkAuthentication]);
-
-  useEffect(() => {
-    if (isAuthenticated && authChecked) {
+    if (isAuthenticated && !authLoading) {
       fetchEventData();
     }
-  }, [isAuthenticated, authChecked, fetchEventData]);
+  }, [isAuthenticated, authLoading, fetchEventData]);
 
   const addToCart = (ticket: Ticket) => {
     const existingItem = cart.find(item => item.ticketId === ticket.id);
@@ -252,10 +240,10 @@ export default function CheckoutPage({ params }: { params: { eventId: string } }
         totalAmount: calculateTotal()
       };
 
-      const response = await api.transactions.create(transactionData);
+      const response = await apiService.createTransaction(transactionData);
       
       if (response.data?.success) {
-        const transactionId = response.data.transaction.id;
+        const transactionId = response.data.data?.id || response.data.data?.transaction?.id;
         toast.success('Order created successfully!');
         router.push(`/payment/${transactionId}`);
       } else {
@@ -280,7 +268,7 @@ export default function CheckoutPage({ params }: { params: { eventId: string } }
     });
   };
 
-  if (loading || !authChecked) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-black pt-20 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white"></div>

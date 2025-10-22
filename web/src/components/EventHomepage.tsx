@@ -7,15 +7,8 @@ import Countdown from "./Countdown";
 import Footer from "./Footer";
 import { useDebounce } from "@/hooks/useDebounce";
 import Marquee from "react-fast-marquee";
-
-import { api } from "@/libs/api";
-
-interface User {
-  email: string;
-  role: string;
-  name: string;
-  isAuthenticated: boolean;
-}
+import { useAuth } from "@/contexts/AuthContext";
+import apiService from "@/services/api.service";
 
 interface Event {
   id: string;
@@ -32,7 +25,7 @@ interface Event {
 }
 
 function EventHomepage() {
-  const [user, setUser] = useState<User | null>(null);
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedLocation, setSelectedLocation] = useState('all');
@@ -76,66 +69,7 @@ function EventHomepage() {
     return gradients[category] || 'from-gray-400 to-gray-500';
   };
 
-  const fetchEvents = async () => {
-    try {
-      setLoading(true);
-      const params: any = {
-        page: currentPage,
-        limit: eventsPerPage,
-      };
-      
-      if (searchQuery) params.search = searchQuery;
-      if (selectedCategory !== 'all') params.category = selectedCategory;
-
-      const response = await api.events.getAll(params);
-      
-      if (response.data?.success) {
-        // Transform API data to match component interface
-        const transformedEvents = response.data.data.events.map((event: any) => ({
-          id: event.id.toString(),
-          title: event.name,
-          category: event.category,
-          location: event.location,
-          date: new Date(event.startDate).toLocaleDateString('id-ID', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          }),
-          datetime: event.startDate,
-          price: formatIDR(event.price),
-          priceValue: event.price,
-          image: getCategoryGradient(event.category),
-          featured: event.availableSeats > event.totalSeats * 0.8, // Featured if high availability
-          organizer: `${event.organizer?.firstName} ${event.organizer?.lastName}` || 'EventHub'
-        }));
-        
-        if (currentPage === 1) {
-          setAllEvents(transformedEvents);
-        } else {
-          setAllEvents(prev => [...prev, ...transformedEvents]);
-        }
-        setTotalPages(response.data.data.pagination.totalPages);
-        return;
-      }
-      
-      // Fallback to mock data
-      console.log('API response not successful, falling back to mock data');
-      const mockEvents = getMockEvents();
-      setAllEvents(mockEvents);
-      setTotalPages(1);
-      
-    } catch (error) {
-      console.error('Failed to fetch events:', error);
-      // Fallback to mock data if API fails
-      const mockEvents = getMockEvents();
-      setAllEvents(mockEvents);
-      setTotalPages(1);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fallback mock data
+  // Fallback mock data - defined before fetchEvents
   const getMockEvents = (): Event[] => [
     {
       id: '1',
@@ -243,28 +177,75 @@ function EventHomepage() {
     }
   ];
 
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      
+      // Try to fetch from API first
+      try {
+        const params: any = {
+          page: currentPage,
+          limit: eventsPerPage,
+        };
+        
+        if (searchQuery) params.search = searchQuery;
+        if (selectedCategory !== 'all') params.category = selectedCategory;
+
+        const response = await apiService.getEvents(params);
+        
+        if (response.data?.success) {
+          // Transform API data to match component interface
+          const transformedEvents = response.data.data.events.map((event: any) => ({
+            id: event.id.toString(),
+            title: event.name,
+            category: event.category,
+            location: event.location,
+            date: new Date(event.startDate).toLocaleDateString('id-ID', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            }),
+            datetime: event.startDate,
+            price: formatIDR(event.price),
+            priceValue: event.price,
+            image: getCategoryGradient(event.category),
+            featured: event.availableSeats > event.totalSeats * 0.8, // Featured if high availability
+            organizer: `${event.organizer?.firstName} ${event.organizer?.lastName}` || 'EventHub'
+          }));
+          
+          if (currentPage === 1) {
+            setAllEvents(transformedEvents);
+          } else {
+            setAllEvents(prev => [...prev, ...transformedEvents]);
+          }
+          setTotalPages(response.data.data.pagination.totalPages);
+          return;
+        }
+      } catch (apiError) {
+        console.log('API call failed, will fallback to mock data');
+      }
+      
+      // Fallback to mock data
+      console.log('API response not successful, falling back to mock data');
+      const mockEvents = getMockEvents();
+      setAllEvents(mockEvents);
+      setTotalPages(1);
+      
+    } catch (error) {
+      console.error('Failed to fetch events:', error);
+      // Fallback to mock data if API fails
+      const mockEvents = getMockEvents();
+      setAllEvents(mockEvents);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const categories = ['all', 'MUSIC', 'TECHNOLOGY', 'ARTS', 'FOOD', 'BUSINESS', 'SPORTS', 'EDUCATION', 'HEALTH', 'FASHION', 'TRAVEL', 'PHOTOGRAPHY', 'GAMING', 'FITNESS', 'OTHER'];
   const locations = ['all', 'Jakarta', 'Bandung', 'Yogyakarta', 'Surabaya'];
 
-  useEffect(() => {
-    // Check for authenticated user
-    if (typeof window !== 'undefined') {
-      const userData = localStorage.getItem('user_data');
-      if (userData) {
-        try {
-          const parsedUser = JSON.parse(userData);
-          setUser({
-            email: parsedUser.email,
-            role: parsedUser.role,
-            name: `${parsedUser.firstName} ${parsedUser.lastName}`,
-            isAuthenticated: true
-          });
-        } catch (error) {
-          console.error('Error parsing user data:', error);
-        }
-      }
-    }
-  }, []);
+  // Remove legacy user check - now using AuthContext
 
   // Fetch events from API or use mock data
   useEffect(() => {
@@ -834,7 +815,7 @@ function EventHomepage() {
             Join thousands of organizers and start hosting amazing events today!
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            {user?.isAuthenticated ? (
+            {isAuthenticated ? (
               <Link
                 href="/create-event"
                 className="px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:bg-gray-100 transition-colors"
@@ -849,9 +830,9 @@ function EventHomepage() {
                 Get Started
               </Link>
             )}
-            {user?.isAuthenticated && (
+            {isAuthenticated && (
               <Link
-                href="/transactions"
+                href="/dashboard"
                 className="px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:bg-gray-100 transition-colors"
               >
                 View My Tickets

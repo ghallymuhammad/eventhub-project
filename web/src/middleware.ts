@@ -11,6 +11,9 @@ const protectedRoutes = [
   '/favorites',
   '/tickets',
   '/admin',
+  '/user/dashboard',
+  '/user/payment',
+  '/user/profile',
 ];
 
 // Client-side protected routes (handled by components, not middleware)

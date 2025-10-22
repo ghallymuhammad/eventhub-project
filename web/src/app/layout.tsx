@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { Toaster } from "sonner";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -29,11 +31,15 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        <Navbar />
-        <main className="min-h-screen">
-          {children}
-        </main>
-        <Toaster position="top-right" richColors />
+        <AuthProvider>
+          <ErrorBoundary>
+            <Navbar />
+            <main className="min-h-screen">
+              {children}
+            </main>
+            <Toaster position="top-right" richColors />
+          </ErrorBoundary>
+        </AuthProvider>
       </body>
     </html>
   );
