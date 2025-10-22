@@ -3,5 +3,8 @@
     "dev:web": "npm run dev --prefix web",
     "dev:api": "npm run dev --prefix api",
     "dev": "npm-run-all --parallel dev:*"
+  },
+  "dependencies": {
+    "axios": "^1.12.2"
   }
 }

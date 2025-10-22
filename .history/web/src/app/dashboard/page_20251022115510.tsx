@@ -1,0 +1,304 @@
+"use client";
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import apiService from '@/services/api.service';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import {
+  Ticket,
+  Calendar,
+  Star,
+  MapPin,
+  Clock,
+  TrendingUp,
+  Award,
+  Plus,
+  Eye,
+  Gift
+} from 'lucide-react';
+import Link from 'next/link';
+
+interface UserTicket {
+  id: number;
+  event: {
+    id: number;
+    name: string;
+    location: string;
+    startDate: string;
+    category: string;
+  };
+  status: 'ACTIVE' | 'USED' | 'CANCELLED';
+  purchaseDate: string;
+}
+
+interface DashboardStats {
+  totalTickets: number;
+  upcomingEvents: number;
+  eventsAttended: number;
+  pointsBalance: number;
+}
+
+export default function DashboardPage() {
+  const router = useRouter();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const [tickets, setTickets] = useState<UserTicket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalTickets: 0,
+    upcomingEvents: 0,
+    eventsAttended: 0,
+    pointsBalance: 0
+  });
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+    if (isAuthenticated) {
+      fetchDashboardData();
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch user tickets
+      const ticketsRes = await apiService.get('/users/tickets');
+      
+      if (ticketsRes.data?.success) {
+        const userTickets: UserTicket[] = ticketsRes.data.data || [];
+        setTickets(userTickets);
+        
+        // Calculate stats
+        const now = new Date();
+        const upcoming = userTickets.filter((t: UserTicket) =>
+          t.status === 'ACTIVE' && new Date(t.event.startDate) > now
+        );
+        const attended = userTickets.filter((t: UserTicket) => t.status === 'USED');
+        
+        setStats({
+          totalTickets: userTickets.length,
+          upcomingEvents: upcoming.length,
+          eventsAttended: attended.length,
+          pointsBalance: user?.pointBalance || 0
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      toast.error('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const getCategoryGradient = (category: string) => {
+    const gradients: { [key: string]: string } = {
+      'MUSIC': 'from-red-400 to-pink-500',
+      'TECHNOLOGY': 'from-green-400 to-blue-500',
+      'ARTS': 'from-purple-400 to-indigo-500',
+      'SPORTS': 'from-yellow-400 to-orange-500',
+      'FOOD': 'from-pink-400 to-red-500',
+      'BUSINESS': 'from-blue-400 to-purple-500',
+      'OTHER': 'from-gray-400 to-gray-500'
+    };
+    return gradients[category] || 'from-gray-400 to-gray-500';
+  };
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-black pt-20 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-black pt-20 pb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Welcome Header */}
+        <div className="mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            Welcome back, {user?.firstName}! 👋
+          </h1>
+          <p className="text-xl text-white/80">
+            Here's your event dashboard overview
+          </p>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                <Ticket className="w-6 h-6 text-blue-400" />
+              </div>
+              <span className="text-2xl">🎫</span>
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-1">{stats.totalTickets}</h3>
+            <p className="text-white/60">Total Tickets</p>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                <Calendar className="w-6 h-6 text-green-400" />
+              </div>
+              <span className="text-2xl">📅</span>
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-1">{stats.upcomingEvents}</h3>
+            <p className="text-white/60">Upcoming Events</p>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                <Award className="w-6 h-6 text-purple-400" />
+              </div>
+              <span className="text-2xl">🏆</span>
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-1">{stats.eventsAttended}</h3>
+            <p className="text-white/60">Events Attended</p>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
+                <Gift className="w-6 h-6 text-yellow-400" />
+              </div>
+              <span className="text-2xl">💎</span>
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-1">{stats.pointsBalance}</h3>
+            <p className="text-white/60">Reward Points</p>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 mb-12 border border-white/20">
+          <h2 className="text-2xl font-bold text-white mb-6">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Link
+              href="/"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white p-6 rounded-2xl transition-all duration-300 transform hover:scale-105 flex items-center gap-4"
+            >
+              <Plus className="w-8 h-8" />
+              <div>
+                <h3 className="font-bold text-lg">Browse Events</h3>
+                <p className="text-blue-100">Discover new events</p>
+              </div>
+            </Link>
+
+            <Link
+              href="/tickets"
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white p-6 rounded-2xl transition-all duration-300 transform hover:scale-105 flex items-center gap-4"
+            >
+              <Ticket className="w-8 h-8" />
+              <div>
+                <h3 className="font-bold text-lg">My Tickets</h3>
+                <p className="text-green-100">View all tickets</p>
+              </div>
+            </Link>
+
+            <Link
+              href="/profile"
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white p-6 rounded-2xl transition-all duration-300 transform hover:scale-105 flex items-center gap-4"
+            >
+              <TrendingUp className="w-8 h-8" />
+              <div>
+                <h3 className="font-bold text-lg">My Profile</h3>
+                <p className="text-purple-100">Update settings</p>
+              </div>
+            </Link>
+          </div>
+        </div>
+
+        {/* Recent Tickets */}
+        <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-bold text-white">Recent Tickets</h2>
+            <Link
+              href="/tickets"
+              className="text-blue-400 hover:text-blue-300 font-medium flex items-center gap-2"
+            >
+              View All <Eye className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {tickets.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Ticket className="w-12 h-12 text-white/60" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-4">No Tickets Yet</h3>
+              <p className="text-white/60 mb-8">
+                Start exploring events and book your first ticket!
+              </p>
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300"
+              >
+                <Plus className="w-5 h-5" />
+                Browse Events
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {tickets.slice(0, 6).map((ticket) => (
+                <div
+                  key={ticket.id}
+                  className="bg-black/30 rounded-2xl p-6 hover:bg-black/40 transition-all duration-300"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`w-12 h-12 bg-gradient-to-r ${getCategoryGradient(ticket.event.category)} rounded-xl flex items-center justify-center`}>
+                      <Ticket className="w-6 h-6 text-white" />
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      ticket.status === 'ACTIVE'
+                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                        : ticket.status === 'USED'
+                        ? 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                        : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                    }`}>
+                      {ticket.status}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2">
+                    {ticket.event.name}
+                  </h3>
+                  <div className="space-y-2 text-white/80">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-red-400" />
+                      <span className="text-sm">{ticket.event.location}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-blue-400" />
+                      <span className="text-sm">{formatDate(ticket.event.startDate)}</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-white/20">
+                    <Link
+                      href={`/events/${ticket.event.id}`}
+                      className="text-blue-400 hover:text-blue-300 font-medium text-sm"
+                    >
+                      View Event Details →
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
