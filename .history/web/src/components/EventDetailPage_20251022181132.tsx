@@ -588,20 +588,11 @@ export default function EventDetailPage({ eventId }: { eventId: string }) {
                     </div>
                     <button
                       onClick={handlePurchase}
-                      disabled={selectedTickets.length === 0 || authLoading}
+                      disabled={selectedTickets.length === 0}
                       className="w-full py-4 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl font-bold text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                      {authLoading ? (
-                        <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                          Loading...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle size={20} />
-                          Purchase Tickets
-                        </>
-                      )}
+                      <CheckCircle size={20} />
+                      Purchase Tickets
                     </button>
                   </div>
                 )}
