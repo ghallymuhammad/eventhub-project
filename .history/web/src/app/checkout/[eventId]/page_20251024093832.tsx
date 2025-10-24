@@ -601,7 +601,18 @@ export default function CheckoutPage({ params }: { params: { eventId: string } }
                   )}
 
                   <div className="space-y-4">
-                   
+                    {/* Debug Information */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="bg-gray-800/50 p-4 rounded-lg text-xs">
+                        <p className="text-yellow-400">Debug Info:</p>
+                        <p className="text-white">Cart items: {cart.length}</p>
+                        <p className="text-white">Is Valid: {isValid ? 'true' : 'false'}</p>
+                        <p className="text-white">Submitting: {submitting ? 'true' : 'false'}</p>
+                        <p className="text-white">Event is Free: {event?.isFree ? 'true' : 'false'}</p>
+                        <p className="text-white">Form Errors: {JSON.stringify(errors)}</p>
+                        <p className="text-white">User Info: {JSON.stringify(userInfo)}</p>
+                      </div>
+                    )}
 
                     {/* Empty Cart Warning */}
                     {cart.length === 0 && !event?.isFree && (
