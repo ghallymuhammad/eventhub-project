@@ -31,8 +31,5 @@ export const getCookie = (name: string): string | null => {
 export const deleteCookie = (name: string) => {
   if (typeof window === 'undefined') return;
   
-  // Delete cookie with proper attributes
-  const domain = window.location.hostname === 'localhost' ? '' : `; Domain=${window.location.hostname}`;
-  
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax${domain}`;
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
 };
