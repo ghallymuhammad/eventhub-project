@@ -128,30 +128,19 @@ export default function CheckoutPage({ params }: { params: { eventId: string } }
       if (eventRes.data?.success && eventRes.data?.data) {
         setEvent(eventRes.data.data);
         
-        // Use real tickets from API response
-        const apiTickets = eventRes.data.data.tickets || [];
-        const formattedTickets = apiTickets.map((ticket: any) => ({
-          id: ticket.id,
-          type: ticket.type,
-          name: ticket.name,
-          description: ticket.description || '',
-          price: ticket.price,
-          availableSeats: eventRes.data.data.availableSeats || 0 // Use event's available seats for now
-        }));
-        
-        setTickets(formattedTickets);
-        
-        // Auto-add one ticket to cart for testing (remove this in production)
-        if (formattedTickets.length > 0 && !eventRes.data.data.isFree) {
-          const autoCartItem: CartItem = {
-            ticketId: formattedTickets[0].id,
-            ticketName: formattedTickets[0].name,
-            ticketType: formattedTickets[0].type,
-            price: formattedTickets[0].price,
-            quantity: 1
-          };
-          setCart([autoCartItem]);
-        }
+        // For now, create mock tickets since the API doesn't have tickets endpoint yet
+        // In a real app, you'd call: await apiService.get(`/events/${params.eventId}/tickets`)
+        const mockTickets = [
+          {
+            id: 1,
+            type: 'general',
+            name: 'General Admission',
+            description: 'Standard entry ticket',
+            price: eventRes.data.data.price || 0,
+            availableSeats: eventRes.data.data.availableSeats || 0
+          }
+        ];
+        setTickets(mockTickets);
       }
     } catch (error: any) {
       console.error('Failed to fetch event data:', error);
@@ -611,19 +600,6 @@ export default function CheckoutPage({ params }: { params: { eventId: string } }
                         <p className="text-white">Event is Free: {event?.isFree ? 'true' : 'false'}</p>
                         <p className="text-white">Form Errors: {JSON.stringify(errors)}</p>
                         <p className="text-white">User Info: {JSON.stringify(userInfo)}</p>
-                      </div>
-                    )}
-
-                    {/* Empty Cart Warning */}
-                    {cart.length === 0 && !event?.isFree && (
-                      <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 mb-4">
-                        <div className="flex items-center gap-3">
-                          <Info className="text-red-400" size={20} />
-                          <div>
-                            <p className="text-red-300 font-semibold">No tickets selected</p>
-                            <p className="text-red-200 text-sm">Please select at least one ticket to proceed with payment.</p>
-                          </div>
-                        </div>
                       </div>
                     )}
                     

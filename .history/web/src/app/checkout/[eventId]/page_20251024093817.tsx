@@ -128,26 +128,27 @@ export default function CheckoutPage({ params }: { params: { eventId: string } }
       if (eventRes.data?.success && eventRes.data?.data) {
         setEvent(eventRes.data.data);
         
-        // Use real tickets from API response
-        const apiTickets = eventRes.data.data.tickets || [];
-        const formattedTickets = apiTickets.map((ticket: any) => ({
-          id: ticket.id,
-          type: ticket.type,
-          name: ticket.name,
-          description: ticket.description || '',
-          price: ticket.price,
-          availableSeats: eventRes.data.data.availableSeats || 0 // Use event's available seats for now
-        }));
-        
-        setTickets(formattedTickets);
+        // For now, create mock tickets since the API doesn't have tickets endpoint yet
+        // In a real app, you'd call: await apiService.get(`/events/${params.eventId}/tickets`)
+        const mockTickets = [
+          {
+            id: 1,
+            type: 'general',
+            name: 'General Admission',
+            description: 'Standard entry ticket',
+            price: eventRes.data.data.price || 0,
+            availableSeats: eventRes.data.data.availableSeats || 0
+          }
+        ];
+        setTickets(mockTickets);
         
         // Auto-add one ticket to cart for testing (remove this in production)
-        if (formattedTickets.length > 0 && !eventRes.data.data.isFree) {
+        if (mockTickets.length > 0 && !eventRes.data.data.isFree) {
           const autoCartItem: CartItem = {
-            ticketId: formattedTickets[0].id,
-            ticketName: formattedTickets[0].name,
-            ticketType: formattedTickets[0].type,
-            price: formattedTickets[0].price,
+            ticketId: mockTickets[0].id,
+            ticketName: mockTickets[0].name,
+            ticketType: mockTickets[0].type,
+            price: mockTickets[0].price,
             quantity: 1
           };
           setCart([autoCartItem]);
