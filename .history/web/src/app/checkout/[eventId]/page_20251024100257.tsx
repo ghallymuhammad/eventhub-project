@@ -216,32 +216,19 @@ export default function CheckoutPage({ params }: { params: { eventId: string } }
   };
 
   const handleProceedToPayment = async () => {
-    console.log('🚀 Proceed to Payment clicked!');
-    console.log('Button state:', {
-      submitting,
-      cartLength: cart.length,
-      isFree: event?.isFree,
-      isValid,
-      buttonDisabled: submitting || (cart.length === 0 && !event?.isFree) || !isValid
-    });
-    
     // Validate form first
     const isFormValid = await validateAll();
-    console.log('Form validation result:', isFormValid);
     
     if (!isFormValid) {
-      console.log('Form validation failed:', errors);
       toast.error('Please fix the form errors before proceeding');
       return;
     }
 
     if (cart.length === 0 && !event?.isFree) {
-      console.log('Cart is empty for paid event');
       toast.error('Please select at least one ticket');
       return;
     }
 
-    console.log('Proceeding with payment...');
     setSubmitting(true);
     
     try {
@@ -529,10 +516,10 @@ export default function CheckoutPage({ params }: { params: { eventId: string } }
                 </div>
 
                 <div>
-                  <label className="block text-white font-semibold mb-2">Phone Number (Optional)</label>
+                  <label className="block text-white font-semibold mb-2">Phone Number *</label>
                   <input
                     type="tel"
-                    value={userInfo.phoneNumber || ''}
+                    value={userInfo.phoneNumber}
                     onChange={(e) => handleChange('phoneNumber', e.target.value)}
                     onBlur={() => handleBlur('phoneNumber')}
                     className={`w-full p-4 bg-white/10 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all ${
@@ -608,19 +595,7 @@ export default function CheckoutPage({ params }: { params: { eventId: string } }
                   )}
 
                   <div className="space-y-4">
-                    {/* Debug Information Panel */}
-                    <div className="bg-gray-800/50 border border-gray-600 rounded-xl p-4 mb-4">
-                      <h4 className="text-white font-semibold mb-2">🐛 Debug Information</h4>
-                      <div className="text-sm text-gray-300 space-y-1">
-                        <div>Cart items: {cart.length}</div>
-                        <div>Is Free Event: {event?.isFree ? 'Yes' : 'No'}</div>
-                        <div>Form Valid: {isValid ? 'Yes' : 'No'}</div>
-                        <div>Submitting: {submitting ? 'Yes' : 'No'}</div>
-                        <div>Button Disabled: {(submitting || (cart.length === 0 && !event.isFree) || !isValid) ? 'Yes' : 'No'}</div>
-                        <div>Form Errors: {Object.keys(errors).length > 0 ? JSON.stringify(errors) : 'None'}</div>
-                        <div>User Info: {JSON.stringify(userInfo)}</div>
-                      </div>
-                    </div>
+                   
 
                     {/* Empty Cart Warning */}
                     {cart.length === 0 && !event?.isFree && (

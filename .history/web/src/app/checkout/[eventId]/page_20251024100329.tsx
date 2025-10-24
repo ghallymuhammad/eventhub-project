@@ -222,7 +222,7 @@ export default function CheckoutPage({ params }: { params: { eventId: string } }
       cartLength: cart.length,
       isFree: event?.isFree,
       isValid,
-      buttonDisabled: submitting || (cart.length === 0 && !event?.isFree) || !isValid
+      buttonDisabled: submitting || (cart.length === 0 && !event.isFree) || !isValid
     });
     
     // Validate form first
@@ -529,10 +529,10 @@ export default function CheckoutPage({ params }: { params: { eventId: string } }
                 </div>
 
                 <div>
-                  <label className="block text-white font-semibold mb-2">Phone Number (Optional)</label>
+                  <label className="block text-white font-semibold mb-2">Phone Number *</label>
                   <input
                     type="tel"
-                    value={userInfo.phoneNumber || ''}
+                    value={userInfo.phoneNumber}
                     onChange={(e) => handleChange('phoneNumber', e.target.value)}
                     onBlur={() => handleBlur('phoneNumber')}
                     className={`w-full p-4 bg-white/10 border rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all ${

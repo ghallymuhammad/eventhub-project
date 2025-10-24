@@ -529,7 +529,7 @@ export default function CheckoutPage({ params }: { params: { eventId: string } }
                 </div>
 
                 <div>
-                  <label className="block text-white font-semibold mb-2">Phone Number (Optional)</label>
+                  <label className="block text-white font-semibold mb-2">Phone Number *</label>
                   <input
                     type="tel"
                     value={userInfo.phoneNumber || ''}
