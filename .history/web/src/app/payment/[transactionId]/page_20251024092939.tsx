@@ -120,6 +120,23 @@ export default function PaymentPage() {
     }
   }, [transaction?.paymentDeadline]);
 
+  const fetchTransaction = async () => {
+    try {
+      const response = await apiService.get(`/transactions/${params.transactionId}`);
+      if (response.data?.success) {
+        setTransaction(response.data.data as Transaction);
+      } else {
+        throw new Error('Transaction not found');
+      }
+    } catch (error) {
+      console.error('Error fetching transaction:', error);
+      toast.error('Failed to load transaction details');
+      router.push('/');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -186,7 +203,11 @@ export default function PaymentPage() {
       const formData = new FormData();
       formData.append('paymentProof', paymentProof);
       
-      const response = await apiService.post(`/transactions/${params.transactionId}/payment-proof`, formData);
+      const response = await apiService.post(`/transactions/${params.transactionId}/payment-proof`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
       if (response.data?.success) {
         toast.success('Payment proof uploaded successfully!');
@@ -344,7 +365,7 @@ export default function PaymentPage() {
                     <p className="font-semibold mb-2">How to transfer:</p>
                     <ol className="space-y-1 list-decimal list-inside">
                       <li>Open your BCA mobile banking or visit BCA ATM</li>
-                      <li>Select &quot;Transfer&quot; and choose &quot;To BCA Account&quot;</li>
+                      <li>Select "Transfer" and choose "To BCA Account"</li>
                       <li>Enter the account number: <strong>{bankDetails.accountNumber}</strong></li>
                       <li>Enter the exact amount: <strong>{formatCurrency(transaction.finalAmount)}</strong></li>
                       <li>Verify the account holder name: <strong>{bankDetails.accountHolder}</strong></li>

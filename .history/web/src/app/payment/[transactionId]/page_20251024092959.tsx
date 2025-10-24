@@ -120,6 +120,23 @@ export default function PaymentPage() {
     }
   }, [transaction?.paymentDeadline]);
 
+  const fetchTransaction = async () => {
+    try {
+      const response = await apiService.get(`/transactions/${params.transactionId}`);
+      if (response.data?.success) {
+        setTransaction(response.data.data as Transaction);
+      } else {
+        throw new Error('Transaction not found');
+      }
+    } catch (error) {
+      console.error('Error fetching transaction:', error);
+      toast.error('Failed to load transaction details');
+      router.push('/');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
